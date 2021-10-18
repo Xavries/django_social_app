@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.db.models import Q
 from .models import Room, Topic, Message
-from .forms import Room_form
+from .forms import Room_form, User_form
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -77,11 +77,11 @@ def home(request):
     # "icontains" means that result contains text we type in search
     # "i" in icontains means that result contains text we type in search in ANY part of result
     
-    topics = Topic.objects.all()
+    topics = Topic.objects.all()[0:10] # "[0:10]" to show only first 10 topics
     room_count = rooms.count()
     room_messages = Message.objects.filter(Q(room__topic__name__icontains=q))
 
-    context = {'rooms':rooms, 'topics':topics, 'room_count':room_count, 'room_messages ':room_messages }
+    context = {'rooms':rooms, 'topics':topics, 'room_count':room_count, 'room_messages':room_messages }
     return render(request, 'base/home.html', context)
 
 def room(request, pk):
@@ -179,3 +179,29 @@ def delete_message(request, pk):
         message.delete()
         return redirect('home')
     return render(request, 'base/delete.html', {'obj':message})
+
+
+@login_required(login_url='login')
+def update_user(request):
+    user = request.user
+    form = User_form(instance=user)
+
+    if request.method == 'POST':
+        form = User_form(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            return redirect('user-profile', pk=user.id)
+
+    return render(request, 'base/update_user.html', {'form':form})
+
+
+def topics_page(request):
+    q = request.GET.get('q') if request.GET.get('q')!=None else ''
+    topics = Topic.objects.filter(name__icontains=q)
+    return render(request, 'base/topics.html', {'topics':topics})
+
+def activity_page(request):
+    #q = request.GET.get('q') if request.GET.get('q')!=None else ''
+    room_messages = Message.objects.all()
+    #room_messages = Message.objects.filter(Q(room__topic__name__icontains=q))
+    return render(request, 'base/activity.html', {'room_messages':room_messages})
