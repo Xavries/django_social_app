@@ -17,7 +17,7 @@
                   ></path>
                 </svg>
               </a>
-              <h3>Study Room</h3>
+              <h3>Room - {{room.name}}</h3>
             </div>
 
             {% if room.host == request.user %}
@@ -63,20 +63,19 @@
           <div class="room__box scroll">
             <div class="room__header scroll">
               <div class="room__info">
-                <h3>{{room.name}}</h3>
-                <span>{{room.created|timesince}} ago</span>
+                <span>Created {{room.created|timesince}} ago</span>
               </div>
               <div class="room__hosted">
                 <p>Hosted By</p>
                 <a href="{% url 'user-profile' room.host.id %}" class="room__author">
-                  <div class="avatar avatar--small">
-                    <img src="https://randomuser.me/api/portraits/men/37.jpg" />
+                  <div class="avatar avatar--medium">
+                    <img src="{{room.host.avatar.url}}" />
                   </div>
                   <span>@{{room.host.username}}</span>
                 </a>
               </div>
               <div class="room__details">
-                description
+                <h5>Room description:</h5>{{room.description}}
               </div>
               <span class="room__topics">{{room.topic}}</span>
             </div>
@@ -89,7 +88,7 @@
                     <div class="thread__author">
                       <a href="{% url 'user-profile' message.user.id %}" class="thread__authorInfo">
                         <div class="avatar avatar--small">
-                          <img src="https://randomuser.me/api/portraits/men/37.jpg" />
+                          <img src="{{message.user.avatar.url}}" />
                         </div>
                         <span>@{{message.user.username}}</span>
                       </a>
@@ -127,7 +126,7 @@
         </div>
         <!-- Room End -->
 
-        <!--   Start -->
+        <!--  Participants Start -->
         <div class="participants">
           <h3 class="participants__top">Participants <span>({{participants.count}} Joined)</span></h3>
           <div class="participants__list scroll">
@@ -135,8 +134,8 @@
             {% for user in participants %}
             
             <a href="{% url 'user-profile' user.id %}" class="participant">
-              <div class="avatar avatar--medium">
-                <img src="https://randomuser.me/api/portraits/men/37.jpg" />
+              <div class="avatar avatar--small">
+                <img src="{{room.participants.avatar.url}}" />
               </div>
               <p>
                 {{user.username}}
@@ -146,9 +145,8 @@
             {% endfor %}
           </div>
         </div>
-        <!--  End -->
+        <!-- Participants End -->
       </div>
     </main>
-    <script src="script.js"></script>
 
 {% endblock content %}

@@ -1,13 +1,11 @@
 from django.shortcuts import render, redirect
 from django.db.models import Q
-from .models import Room, Topic, Message
-from .forms import Room_form, User_form
-from django.contrib.auth.models import User
+from .models import Room, Topic, Message, User
+from .forms import Room_form, User_form, my_user_creation_form
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.contrib.auth.forms import UserCreationForm
 
 #rooms = [
 #    {'id':1, 'name':'Learn django'},
@@ -21,21 +19,21 @@ def login_page(request):
         return redirect('home')
 
     if request.method == 'POST':
-        username = request.POST.get('username').lower()
+        email = request.POST.get('email').lower()
         password = request.POST.get('password')
 
         try:
-            user = User.objects.get(username=username)
+            user = User.objects.get(email=email)
         except:
             messages.error(request, 'User does not exist')
 
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, email=email, password=password)
 
         if user is not None:
             login(request, user)
             return redirect('home')
         else:
-            messages.error(request, 'Username or password is wrong')
+            messages.error(request, 'Email or password is wrong')
 
     context = {'page':page}
     return render(request, 'base/login_register.html', context)
@@ -45,19 +43,21 @@ def logout_user(request):
     return redirect('home')
 
 def register_user(request):
-    page = 'register'
-    form = UserCreationForm(request.POST)
+    form = my_user_creation_form()
+    #page = 'register'
+    
+    if request.method == 'POST':
+        form = my_user_creation_form(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.username = user.username.lower()
+            user.save()
+            login(request, user)
+            return redirect('home')
+        else:
+            messages.error(request, 'An error ocurred during registration')
 
-    if form.is_valid():
-        user = form.save(commit=False)
-        user.username = user.username.lower()
-        user.save()
-        login(request, user)
-        return redirect('home')
-    else:
-        messages.error(request, 'An error ocurred during registration')
-
-    context = {'page':page, 'form':form}
+    context = {'form':form}
     return render(request, 'base/login_register.html', context)
 
 
@@ -187,7 +187,7 @@ def update_user(request):
     form = User_form(instance=user)
 
     if request.method == 'POST':
-        form = User_form(request.POST, instance=user)
+        form = User_form(request.POST, request.FILES, instance=user)
         if form.is_valid():
             form.save()
             return redirect('user-profile', pk=user.id)
@@ -201,7 +201,5 @@ def topics_page(request):
     return render(request, 'base/topics.html', {'topics':topics})
 
 def activity_page(request):
-    #q = request.GET.get('q') if request.GET.get('q')!=None else ''
     room_messages = Message.objects.all()
-    #room_messages = Message.objects.filter(Q(room__topic__name__icontains=q))
     return render(request, 'base/activity.html', {'room_messages':room_messages})
