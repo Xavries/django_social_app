@@ -11,10 +11,12 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
+from django.conf import settings
+from django.conf.urls.static import static
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+#PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -135,6 +137,12 @@ STATICFILES_DIRS = [
 ]
 
 MEDIA_ROOT = BASE_DIR / 'static/images'
+
+urlpatterns = [
+    # ... the rest of your URLconf goes here ...
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+STATIC_ROOT = BASE_DIR / 'static_root'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
