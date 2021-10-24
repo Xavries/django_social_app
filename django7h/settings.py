@@ -13,22 +13,25 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 from django.conf import settings
 from django.conf.urls.static import static
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-#PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+#BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-@#jspx=h)wbnkg*0yqggojz_(p+#ley7wgr^z_=*+_%l^8w*+3'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['127.0.0.1', 'django7h-env.eba-3mmnp6am.eu-central-1.elasticbeanstalk.com']
+# '127.0.0.1:8000', 
 
 # Application definition
 
@@ -42,6 +45,7 @@ INSTALLED_APPS = [
     'base.apps.BaseConfig',
     'rest_framework',
     "corsheaders",
+    'storages',
 ]
 
 ##### this is needed to use our custom user model for authentication, not django default model
@@ -65,7 +69,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            BASE_DIR / 'templates'
+            os.path.join(BASE_DIR, 'templates')
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -87,8 +91,12 @@ WSGI_APPLICATION = 'django7h.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'aws_django7h_db',
+        'USER':'aws_rds_user',
+        'PASSWORD':'postgres',
+        'HOST':os.getenv('RDS_DATABASE_DJANGO_DISC'),
+        'PORT':'5432'
     }
 }
 
@@ -129,20 +137,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/'
+#STATIC_URL = '/static/'
 MEDIA_URL = '/images/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',
+    os.path.join(BASE_DIR, 'static')
 ]
 
-MEDIA_ROOT = BASE_DIR / 'static/images'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'static/images')
 
-urlpatterns = [
-    # ... the rest of your URLconf goes here ...
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-STATIC_ROOT = BASE_DIR / 'static_root'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
@@ -151,3 +154,29 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+#S3 Buckets config
+
+from storages.backends.s3boto3 import S3Boto3Storage
+
+class MediaStorage(S3Boto3Storage):
+    location = 'media'
+    default_acl = 'public-read'
+    file_overwrite = False
+
+class StaticStorage(S3Boto3Storage):
+    location = 'static'
+    default_acl = 'public-read'
+
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID_1')
+AWS_SECERET_ACCESS_KEY = os.getenv('AWS_SECERET_ACCESS_KEY_1')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME_1')
+AWS_S3_REGION_NAME="eu-central-1"
+AWS_S3_CUSTOM_DOMAIN = 'test1bucket1pm.s3.eu-central-1.amazonaws.com'
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=31536000'}
+AWS_LOCATION = 'static'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+PUBLIC_MEDIA_LOCATION = 'media'
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{PUBLIC_MEDIA_LOCATION}/'
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
